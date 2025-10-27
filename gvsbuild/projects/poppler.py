@@ -15,7 +15,14 @@ class Poppler(Tarball, CmakeProject):
             repository="https://gitlab.freedesktop.org/poppler/poppler",
             archive_url="https://poppler.freedesktop.org/poppler-{version}.tar.xz",
             hash="6b5e9bb64dabb15787a14db1675291c7afaf9387438cc93a4fb7f6aec4ee6fe0",
-            dependencies=["fontconfig", "freetype", "cairo", "libpng", "zlib", "libjpeg-turbo"],
+            dependencies=[
+                "fontconfig",
+                "freetype",
+                "cairo",
+                "libpng",
+                "zlib",
+                "libjpeg-turbo",
+            ],
         )
         self.extra_opts = [
             "-DENABLE_LIBOPENJPEG=none",
