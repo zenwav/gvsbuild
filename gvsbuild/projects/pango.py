@@ -24,13 +24,14 @@ class Pango(Tarball, Meson):
         Project.__init__(
             self,
             "pango",
-            version="1.56.3",
+            version="1.57.0",
             repository="https://gitlab.gnome.org/GNOME/pango",
             archive_url="https://download.gnome.org/sources/pango/{major}.{minor}/pango-{version}.tar.xz",
-            hash="2606252bc25cd8d24e1b7f7e92c3a272b37acd6734347b73b47a482834ba2491",
+            hash="890640c841dae77d3ae3d8fe8953784b930fa241b17423e6120c7bfdf8b891e7",
             dependencies=[
                 "ninja",
                 "meson",
+                "fontconfig",
                 "freetype",
                 "cairo",
                 "harfbuzz",
@@ -47,6 +48,7 @@ class Pango(Tarball, Meson):
 
         self.add_param(f"-Dintrospection={enable_gi}")
         self.add_param("-Dfreetype=enabled")
+        self.add_param("-Dfontconfig=enabled")
 
     def build(self):
         Meson.build(self)

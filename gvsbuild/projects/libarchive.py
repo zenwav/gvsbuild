@@ -27,9 +27,10 @@ class Libarchive(Tarball, CmakeProject):
         Project.__init__(
             self,
             "libarchive",
-            version="3.7.9",
+            version="3.8.2",
+            repository="https://github.com/libarchive/libarchive",
             archive_url="https://libarchive.org/downloads/libarchive-{version}.tar.xz",
-            hash="ed8b5732e4cd6e30fae909fb945cad8ff9cb7be5c6cdaa3944ec96e4a200c04c",
+            hash="db0dee91561cbd957689036a3a71281efefd131d35d1d98ebbc32720e4da58e2",
             dependencies=[
                 "cmake",
                 "ninja",
@@ -43,7 +44,10 @@ class Libarchive(Tarball, CmakeProject):
         )
 
     def build(self):
-        CmakeProject.build(self, cmake_params="-DENABLE_WERROR=OFF", use_ninja=True)
+        cmake_params = (
+            "-DENABLE_WERROR=OFF -DENABLE_TEST=OFF -DBUILD_TESTING=OFF -Wno-dev"
+        )
+        CmakeProject.build(self, cmake_params=cmake_params, use_ninja=True)
         # Fix the pkg-config .pc file, correcting the library's names
         file_replace(
             os.path.join(self.pkg_dir, "lib", "pkgconfig", "libarchive.pc"),

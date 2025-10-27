@@ -26,9 +26,10 @@ class Ffmpeg(Tarball, Project):
         Project.__init__(
             self,
             "ffmpeg",
-            version="7.1.1",
+            version="8.0",
+            repository="https://git.ffmpeg.org/ffmpeg.git",
             archive_url="https://ffmpeg.org/releases/ffmpeg-{version}.tar.xz",
-            hash="733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1",
+            hash="b2751fccb6cc4c77708113cd78b561059b6fa904b24162fa0be2d60273d27b8e",
             dependencies=[
                 "dav1d",
                 "nasm",
@@ -92,6 +93,7 @@ class NvCodecHeaders(Tarball, Project):
             self,
             "nv-codec-headers",
             version="12.2.72.0",
+            repository="https://git.videolan.org/?p=ffmpeg/nv-codec-headers.git",
             archive_url="https://github.com/FFmpeg/nv-codec-headers/releases/download/n{version}/nv-codec-headers-{version}.tar.gz",
             hash="c295a2ba8a06434d4bdc5c2208f8a825285210d71d91d572329b2c51fd0d4d03",
         )

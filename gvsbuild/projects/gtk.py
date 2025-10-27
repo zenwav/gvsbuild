@@ -90,15 +90,17 @@ class Gtk3(Tarball, Meson):
             self,
             "gtk3",
             prj_dir="gtk3",
-            version="3.24.49",
+            version="3.24.51",
             lastversion_major=3,
             lastversion_even=True,
             repository="https://gitlab.gnome.org/GNOME/gtk",
             archive_url="https://download.gnome.org/sources/gtk/{major}.{minor}/gtk-{version}.tar.xz",
-            hash="5ea52c6a28f0e5ecf2e9a3c2facbb30d040b73871fcd5f33cd1317e9018a146e",
+            hash="0013877c6bd23c2dbe42ad7c70a053d0e449be66736574e37867c49c5f905a4f",
             dependencies=["atk", "gdk-pixbuf", "pango", "libepoxy"],
             patches=[
-                "gtk_update_icon_cache.patch",
+                "001-gtk-update-icon-cache.patch",
+                # https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/9067
+                "002-fix-gdkglcontext-not-public.patch",
             ],
         )
         if self.opts.enable_gi:
@@ -122,12 +124,12 @@ class Gtk4(Tarball, Meson):
             self,
             "gtk4",
             prj_dir="gtk4",
-            version="4.18.3",
+            version="4.18.6",
             lastversion_major=4,
             lastversion_even=True,
             repository="https://gitlab.gnome.org/GNOME/gtk",
             archive_url="https://download.gnome.org/sources/gtk/{major}.{minor}/gtk-{version}.tar.xz",
-            hash="081e1bc0b17db41a935af8d1f6f090fb1988936c42ff734d149f3d004119f8bb",
+            hash="e1817c650ddc3261f9a8345b3b22a26a5d80af154630dedc03cc7becefffd0fa",
             dependencies=[
                 "gdk-pixbuf",
                 "pango",

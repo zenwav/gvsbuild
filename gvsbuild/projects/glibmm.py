@@ -25,20 +25,16 @@ class Glibmm(Tarball, Meson):
             self,
             "glibmm",
             prj_dir="glibmm",
-            version="2.84.0",
+            version="2.86.0",
             lastversion_even=True,
             repository="https://gitlab.gnome.org/GNOME/glibmm",
             archive_url="https://download.gnome.org/sources/glibmm/{major}.{minor}/glibmm-{version}.tar.xz",
-            hash="56ee5f51c8acfc0afdf46959316e4c8554cb50ed2b6bc5ce389d979cbb642509",
+            hash="39c0e9f6da046d679390774efdb9ad564436236736dc2f7825e614b2d4087826",
             dependencies=[
                 "meson",
                 "ninja",
                 "libsigc++",
                 "glib",
-            ],
-            patches=[
-                # Fixed in https://gitlab.gnome.org/GNOME/gtkmm/-/commit/9490a86b42b7a980ca8cfabaa63be0655071c546
-                "001-fix-python-not-found.patch",
             ],
         )
 
@@ -49,3 +45,26 @@ class Glibmm(Tarball, Meson):
         )
 
         self.install(r".\COPYING share\doc\glibmm")
+
+
+@project_add
+class Glibmm2_4(Tarball, Meson):
+    def __init__(self):
+        Meson.__init__(
+            self,
+            "glibmm-2.4",
+            prj_dir="glibmm-2.4",
+            version="2.66.8",
+            lastversion_even=True,
+            repository="https://gitlab.gnome.org/GNOME/glibmm",
+            archive_url="https://download.gnome.org/sources/glibmm/{major}.{minor}/glibmm-{version}.tar.xz",
+            hash="64f11d3b95a24e2a8d4166ecff518730f79ecc27222ef41faf7c7e0340fc9329",
+            dependencies=["meson", "ninja", "libsigc++-2.0", "glib"],
+        )
+
+    def build(self):
+        Meson.build(
+            self, meson_params="-Dbuild-examples=false -Dbuild-documentation=false"
+        )
+
+        self.install(r".\COPYING share\doc\glibmm-2.4")
