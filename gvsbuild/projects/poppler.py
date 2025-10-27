@@ -8,22 +8,14 @@ from gvsbuild.utils.base_project import project_add
 @project_add
 class Poppler(Tarball, CmakeProject):
     def __init__(self):
-        version = "25.10.0"
         CmakeProject.__init__(
             self,
             "poppler",
-            version=version,
+            version=25.10.0,
             repository="https://gitlab.freedesktop.org/poppler/poppler",
-            archive_url=f"https://poppler.freedesktop.org/poppler-{version}.tar.xz",
-            hash="6b5e9bb64dabb15787a14db1675291c7afaf9387438cc93a4fb7f6aec4ee6fe0", 
-            dependencies=[
-                "fontconfig",
-                "freetype",
-                "cairo",
-                "libpng",
-                "zlib",
-                "libjpeg-turbo",
-            ],
+            archive_url=f"https://poppler.freedesktop.org/poppler-25.10.0.tar.xz",
+            hash="6b5e9bb64dabb15787a14db1675291c7afaf9387438cc93a4fb7f6aec4ee6fe0",
+            dependencies=["fontconfig", "freetype", "cairo", "libpng", "zlib", "libjpeg-turbo"],
         )
         self.extra_opts = [
             "-DENABLE_LIBOPENJPEG=none",
