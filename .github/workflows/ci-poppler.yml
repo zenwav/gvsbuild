@@ -1,0 +1,180 @@
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+  release:
+    types: [release]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  python_version: '3.14'
+
+name: CI-POPPLER
+
+permissions:
+  contents: read
+
+jobs:
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: ${{ env.python_version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
+        with:
+          enable-cache: true
+          cache-dependency-glob: ".pre-commit-config.yaml"
+      - name: Install pre-commit
+        run: uv tool install pre-commit --with pre-commit-uv
+      - name: Lint with pre-commit
+        run: pre-commit run --show-diff-on-failure --color=always --all-files
+      - name: Check uv lock file integrity
+        run: uv lock --locked --offline
+
+  test:
+    needs: lint
+    name: Test with Python ${{ matrix.python-version }}
+    runs-on: windows-latest
+    timeout-minutes: 60
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: Install the project
+        run: uv sync
+      - name: Install tox
+        run: uv tool install tox --with tox-uv
+      - name: Setup test suite
+        run: tox run --notest --skip-missing-interpreters false
+      - name: Run test suite
+        run: tox run --skip-pkg-install
+
+  build:
+    needs: lint
+    name: Build GTK${{ matrix.gtk-version }} Binaries
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    timeout-minutes: 150
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    strategy:
+      matrix:
+        gtk-version: ['4']
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: ${{ env.python_version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      # - name: Seed pip
+      #   run: uv venv --seed
+      - name: Install the project
+        run: uv sync --no-dev
+      - name: Build GTK3
+        if: matrix.gtk-version == '3'
+        run: >
+          uv run gvsbuild build --ninja-opts -j2 --enable-gi --py-wheel gtk3 gtksourceview4 graphene pygobject
+          adwaita-icon-theme glib-networking
+      - name: Build GTK4
+        if: matrix.gtk-version == '4'
+        run: > # Use -j2 option to prevent out of memory errors with GitHub Action runners
+          uv run gvsbuild build --configuration release --ninja-opts -j2 --enable-gi --py-wheel gtk4 libadwaita gtksourceview5 pygobject
+          adwaita-icon-theme gtkmm
+      - name: Download and merge MSYS2 Poppler package
+        if: matrix.gtk-version == '4'
+        run: |
+          # Download the poppler package from MSYS2
+          Invoke-WebRequest -Uri "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-poppler-25.05.0-1-any.pkg.tar.zst" -OutFile "poppler.tar.zst"
+          
+          # Extract the archive using 7-Zip (pre-installed on GitHub Actions)
+          7z x poppler.tar.zst -o"poppler_temp"
+          7z x poppler_temp\poppler.tar -o"poppler_extracted"
+          
+          # Copy the contents from ucrt64 directory to GTK build directory
+          Copy-Item -Path "poppler_extracted\ucrt64\*" -Destination "C:\gtk-build\gtk\x64\release\" -Recurse -Force
+          
+          # Clean up temporary files
+          Remove-Item -Path "poppler.tar.zst" -Force
+          Remove-Item -Path "poppler_temp" -Recurse -Force
+          Remove-Item -Path "poppler_extracted" -Recurse -Force
+      - name: Copy wheel files
+        run: |
+          New-Item "C:\gtk-build\gtk\x64\release\wheels" -ItemType "directory"
+          Copy-Item (Resolve-Path C:\gtk-build\build\x64\release\pygobject\dist\PyGObject*.whl) "C:\gtk-build\gtk\x64\release\wheels"
+          Copy-Item (Resolve-Path C:\gtk-build\build\x64\release\pycairo\dist\pycairo*.whl) "C:\gtk-build\gtk\x64\release\wheels"
+      - name: Archive GTK runtime
+        run: 7z a -tzip GTK${{ matrix.gtk-version }}_Gvsbuild_${{ github.sha }}_x64.zip C:\gtk-build\gtk\x64\release\*
+      - name: Upload GTK${{ matrix.gtk-version }}_Gvsbuild-${{ github.sha }}_x64.zip
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: GTK${{ matrix.gtk-version }}_Gvsbuild_${{ github.sha }}_x64.zip
+          path: GTK${{ matrix.gtk-version }}_Gvsbuild_${{ github.sha }}_x64.zip
+      - name: Upload Release Assets
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mv GTK${{ matrix.gtk-version }}_Gvsbuild_${{ github.sha }}_x64.zip GTK${{ matrix.gtk-version }}_Gvsbuild_${{ github.event.release.tag_name }}_x64.zip
+          gh release upload ${{ github.event.release.tag_name }} "GTK${{ matrix.gtk-version }}_Gvsbuild_${{ github.event.release.tag_name }}_x64.zip"
+      - name: Cleanup Zip Files
+        if: github.event_name == 'release'
+        run: rm GTK${{ matrix.gtk-version }}_Gvsbuild_${{ github.event.release.tag_name }}_x64.zip
+      - name: Create Source Dist and Wheel
+        if: matrix.gtk-version == '4'
+        run: uv build
+      - name: Upload gvsbuild-${{ github.event.release.tag_name }}.tar.gz
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        if: github.event_name == 'release' && matrix.gtk-version == '4'
+        with:
+          name: gvsbuild-${{ github.event.release.tag_name }}.tar.gz
+          path: dist/gvsbuild-${{ github.event.release.tag_name }}.tar.gz
+      - name: Upload gvsbuild-${{ github.event.release.tag_name }}-py3-none-any.whl
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        if: github.event_name == 'release' && matrix.gtk-version == '4'
+        with:
+          name: gvsbuild-${{ github.event.release.tag_name }}-py3-none-any.whl
+          path: dist/gvsbuild-${{ github.event.release.tag_name }}-py3-none-any.whl
