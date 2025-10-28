@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  python_version: '3.14'
+  python_version: '3.14t'
 
 name: CI-CUSTOM
 
