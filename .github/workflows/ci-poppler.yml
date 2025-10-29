@@ -129,18 +129,29 @@ jobs:
         run: |
           # Download the poppler package from MSYS2
           Invoke-WebRequest -Uri "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-poppler-25.05.0-1-any.pkg.tar.zst" -OutFile "poppler.tar.zst"
+
+          # Download the poppler-data package from MSYS2
+          Invoke-WebRequest -Uri "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-poppler-data-0.4.12-1-any.pkg.tar.zst" -OutFile "poppler-data.tar.zst"
           
           # Extract the archive using 7-Zip (pre-installed on GitHub Actions)
           7z x poppler.tar.zst -o"poppler_temp"
           7z x poppler_temp\poppler.tar -o"poppler_extracted"
+
+          # Extract the poppler-data archive using 7-Zip
+          7z x poppler-data.tar.zst -o"poppler-data_temp"
+          7z x poppler-data_temp\poppler-data.tar -o"poppler-data_extracted"
           
           # Copy the contents from ucrt64 directory to GTK build directory
           Copy-Item -Path "poppler_extracted\ucrt64\*" -Destination "C:\gtk-build\gtk\x64\release\" -Recurse -Force
+          Copy-Item -Path "poppler-data_extracted\ucrt64\*" -Destination "C:\gtk-build\gtk\x64\release\" -Recurse -Force
           
           # Clean up temporary files
           Remove-Item -Path "poppler.tar.zst" -Force
           Remove-Item -Path "poppler_temp" -Recurse -Force
           Remove-Item -Path "poppler_extracted" -Recurse -Force
+          Remove-Item -Path "poppler-data.tar.zst" -Force
+          Remove-Item -Path "poppler-data_temp" -Recurse -Force
+          Remove-Item -Path "poppler-data_extracted" -Recurse -Force
       - name: Copy wheel files
         run: |
           New-Item "C:\gtk-build\gtk\x64\release\wheels" -ItemType "directory"
